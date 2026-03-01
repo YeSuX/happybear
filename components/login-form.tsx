@@ -77,9 +77,7 @@ export function LoginForm({
                   {mode === "login" ? "欢迎回来" : "创建账户"}
                 </h1>
                 <p className="text-muted-foreground text-balance">
-                  {mode === "login"
-                    ? "登录您的账户"
-                    : "填写邮箱和密码完成注册"}
+                  {mode === "login" ? "登录您的账户" : "填写邮箱和密码完成注册"}
                 </p>
               </div>
               {error && (
@@ -192,11 +190,11 @@ export function LoginForm({
           </form>
           <div className="bg-muted relative hidden md:block">
             <Image
-              src="/next.svg"
+              src="/bear.png"
               width={500}
               height={500}
               alt="图片"
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+              className="absolute inset-0 h-full w-full object-contain dark:brightness-[0.2] dark:grayscale"
             />
           </div>
         </CardContent>
