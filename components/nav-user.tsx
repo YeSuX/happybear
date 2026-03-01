@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   BadgeCheck,
   Bell,
@@ -42,6 +43,7 @@ function getInitials(name: string): string {
 }
 
 export function NavUser() {
+  const router = useRouter()
   const { isMobile } = useSidebar()
   const { data: session, isPending, refetch } = authClient.useSession()
   const user = session?.user
@@ -142,6 +144,7 @@ export function NavUser() {
               onClick={async () => {
                 await authClient.signOut()
                 refetch()
+                router.push("/login")
               }}
             >
               <LogOut />
