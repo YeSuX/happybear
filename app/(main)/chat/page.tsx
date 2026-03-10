@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageList } from "@/components/chat/message-list";
-import { ConversationSidebar } from "@/components/chat/conversation-sidebar";
 import { Send } from "lucide-react";
 
 interface Message {
@@ -13,15 +12,8 @@ interface Message {
   content: string;
 }
 
-interface Conversation {
-  id: string;
-  title: string;
-  updatedAt: Date;
-}
-
 export default function ChatPage() {
   const [conversationId, setConversationId] = useState<string | undefined>();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,20 +24,26 @@ export default function ChatPage() {
   }, [messages]);
 
   useEffect(() => {
-    loadConversations();
-  }, []);
+    const handleLoadConversation = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string }>;
+      loadConversation(customEvent.detail.id);
+    };
 
-  const loadConversations = async () => {
-    try {
-      const response = await fetch("/api/conversations");
-      if (response.ok) {
-        const data = await response.json();
-        setConversations(data);
-      }
-    } catch (error) {
-      console.error("Failed to load conversations:", error);
-    }
-  };
+    const handleNewChat = () => {
+      handleNewChatLocal();
+    };
+
+    window.addEventListener("chat:loadConversation", handleLoadConversation);
+    window.addEventListener("chat:newChat", handleNewChat);
+
+    return () => {
+      window.removeEventListener(
+        "chat:loadConversation",
+        handleLoadConversation,
+      );
+      window.removeEventListener("chat:newChat", handleNewChat);
+    };
+  }, []);
 
   const loadConversation = async (id: string) => {
     try {
@@ -60,25 +58,9 @@ export default function ChatPage() {
     }
   };
 
-  const handleNewChat = () => {
+  const handleNewChatLocal = () => {
     setConversationId(undefined);
     setMessages([]);
-  };
-
-  const handleDeleteConversation = async (id: string) => {
-    try {
-      const response = await fetch(`/api/conversations/${id}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setConversations((prev) => prev.filter((c) => c.id !== id));
-        if (conversationId === id) {
-          handleNewChat();
-        }
-      }
-    } catch (error) {
-      console.error("Failed to delete conversation:", error);
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -122,7 +104,8 @@ export default function ChatPage() {
       const newConversationId = response.headers.get("X-Conversation-Id");
       if (newConversationId && !conversationId) {
         setConversationId(newConversationId);
-        await loadConversations();
+        const event = new CustomEvent("chat:conversationCreated");
+        window.dispatchEvent(event);
       }
 
       const assistantMessage: Message = {
@@ -175,48 +158,36 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen">
-      <ConversationSidebar
-        conversations={conversations}
-        currentConversationId={conversationId}
-        onSelect={loadConversation}
-        onDelete={handleDeleteConversation}
-        onNewChat={handleNewChat}
-      />
-      <div className="flex flex-1 flex-col">
-        <div className="border-b p-4">
-          <h1 className="text-lg font-semibold">Chat</h1>
-        </div>
-        {messages.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-center">
-            <div className="max-w-md space-y-4">
-              <h2 className="text-2xl font-semibold">开始新对话</h2>
-              <p className="text-muted-foreground">
-                在下方输入框中输入消息，开始与 AI 助手对话
-              </p>
-            </div>
+    <div className="flex flex-1 flex-col h-full">
+      {messages.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center p-8 text-center">
+          <div className="max-w-md space-y-4">
+            <h2 className="text-2xl font-semibold">开始新对话</h2>
+            <p className="text-muted-foreground">
+              在下方输入框中输入消息，开始与 AI 助手对话
+            </p>
           </div>
-        ) : (
-          <>
-            <MessageList messages={messages} />
-            <div ref={messagesEndRef} />
-          </>
-        )}
-        <div className="border-t p-4">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="输入消息..."
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isLoading || !input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
         </div>
+      ) : (
+        <>
+          <MessageList messages={messages} />
+          <div ref={messagesEndRef} />
+        </>
+      )}
+      <div className="border-t p-4">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="输入消息..."
+            disabled={isLoading}
+            className="flex-1"
+          />
+          <Button type="submit" disabled={isLoading || !input.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
     </div>
   );

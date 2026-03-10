@@ -8,10 +8,12 @@ import {
   Frame,
   LifeBuoy,
   Map,
+  MessageSquarePlus,
   PieChart,
   Send,
   Settings2,
   SquareTerminal,
+  Trash2,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -27,6 +29,19 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const data = {
   navMain: [
@@ -147,7 +162,30 @@ const data = {
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface Conversation {
+  id: string;
+  title: string;
+  updatedAt: Date;
+}
+
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  conversations?: Conversation[];
+  currentConversationId?: string;
+  onSelectConversation?: (id: string) => void;
+  onDeleteConversation?: (id: string) => void;
+  onNewChat?: () => void;
+  showConversations?: boolean;
+}
+
+export function AppSidebar({ 
+  conversations = [],
+  currentConversationId,
+  onSelectConversation,
+  onDeleteConversation,
+  onNewChat,
+  showConversations = false,
+  ...props 
+}: AppSidebarProps) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -168,9 +206,70 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {showConversations ? (
+          <div className="flex flex-col h-full">
+            <div className="p-4">
+              <Button onClick={onNewChat} className="w-full" size="sm">
+                <MessageSquarePlus className="mr-2 h-4 w-4" />
+                新建对话
+              </Button>
+            </div>
+            <ScrollArea className="flex-1">
+              <div className="space-y-1 p-2">
+                {conversations.map((conversation) => (
+                  <div
+                    key={conversation.id}
+                    className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent ${
+                      currentConversationId === conversation.id
+                        ? "bg-accent"
+                        : ""
+                    }`}
+                  >
+                    <button
+                      onClick={() => onSelectConversation?.(conversation.id)}
+                      className="flex-1 truncate text-left"
+                    >
+                      {conversation.title}
+                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>确认删除</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            确定要删除这个对话吗？此操作无法撤销。
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDeleteConversation?.(conversation.id)}
+                          >
+                            删除
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        ) : (
+          <>
+            <NavMain items={data.navMain} />
+            <NavProjects projects={data.projects} />
+            <NavSecondary items={data.navSecondary} className="mt-auto" />
+          </>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
