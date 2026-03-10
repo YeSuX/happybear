@@ -8,6 +8,13 @@
       "when": 1772287724046,
       "tag": "0000_careless_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773121984570,
+      "tag": "0001_thick_the_leader",
+      "breakpoints": true
     }
   ]
 }
